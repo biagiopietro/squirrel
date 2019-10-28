@@ -162,23 +162,19 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 			oracleSql := sql
 			limit, errLimit := strconv.Atoi(d.LimitRowNum)
 			page, errPage := strconv.Atoi(d.Page)
-			if errLimit != nil {
+			if errLimit != nil || limit <= 0 {
 				limit = 20
 			}
-			if errPage != nil {
+			if errPage != nil || page <= 0 {
 				page = 1
 			}
 			start := strconv.Itoa(limit*(page-1) + 1)
 			end := strconv.Itoa(limit*page + 1)
 			oracleSql.WriteString(" SELECT * FROM (" + sqlStr + ") WHERE rnum >= " + start + " AND " + "rnum < " + end)
-
+			sqlStr = oracleSql.String()
 		}
 	}
 
-	if len(d.Page) > 0 {
-		sql.WriteString(" LIMIT ")
-		sql.WriteString(d.Page)
-	}
 	return
 }
 
