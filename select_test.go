@@ -66,6 +66,27 @@ func TestSelectBuilderFromSelect(t *testing.T) {
 	assert.Equal(t, expectedArgs, args)
 }
 
+func TestSelectPageLimitForOracle(t *testing.T) {
+	//subQ := Select("c").From("d").Where(Eq{"i": 0})
+	subQ := Select("t1.IDSOGGETTO, t1.IDISCRIZIONE, t2.DENOMINAZIONE, rownum as rnum").
+		From("STP t1").
+		Join("GRUPPO t2 ON t1.IDSOGGETTO = t2.IDSOGGETTO").
+		Where(Like{"lower(t2.DENOMINAZIONE)": "%t%"}).
+		LimitRowNum(2).Page(1)
+	sql, args, err := subQ.ToSql()
+	assert.NoError(t, err)
+
+	expectedSql := "SELECT * " +
+		"FROM (SELECT t1.IDSOGGETTO, t1.IDISCRIZIONE, t2.DENOMINAZIONE, rownum as rnum " +
+		"FROM STP t1 JOIN GRUPPO t2 ON t1.IDSOGGETTO = t2.IDSOGGETTO " +
+		"WHERE lower(t2.DENOMINAZIONE) LIKE ?) " +
+		"WHERE rnum >= 1 AND rnum < 3"
+	assert.Equal(t, expectedSql, sql)
+
+	expectedArgs := []interface{}{"%t%"}
+	assert.Equal(t, expectedArgs, args)
+}
+
 func TestSelectBuilderFromSelectNestedDollarPlaceholders(t *testing.T) {
 	subQ := Select("c").
 		From("t").

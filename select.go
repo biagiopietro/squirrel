@@ -157,24 +157,21 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 
 	sqlStr = sql.String()
 
-	if len(d.LimitRowNum) > 0 {
-		if len(d.Page) > 0 {
-			oracleSql := sql
-			limit, errLimit := strconv.Atoi(d.LimitRowNum)
-			page, errPage := strconv.Atoi(d.Page)
-			if errLimit != nil || limit <= 0 {
-				limit = 20
-			}
-			if errPage != nil || page <= 0 {
-				page = 1
-			}
-			start := strconv.Itoa(limit*(page-1) + 1)
-			end := strconv.Itoa(limit*page + 1)
-			oracleSql.WriteString(" SELECT * FROM (" + sqlStr + ") WHERE rnum >= " + start + " AND " + "rnum < " + end)
-			sqlStr = oracleSql.String()
+	if len(d.LimitRowNum) > 0 || len(d.Page) > 0 {
+		oracleSql := &bytes.Buffer{}
+		limit, errLimit := strconv.Atoi(d.LimitRowNum)
+		page, errPage := strconv.Atoi(d.Page)
+		if errLimit != nil || limit <= 0 {
+			limit = 20
 		}
+		if errPage != nil || page <= 0 {
+			page = 1
+		}
+		start := strconv.Itoa(limit*(page-1) + 1)
+		end := strconv.Itoa(limit*page + 1)
+		oracleSql.WriteString("SELECT * FROM (" + sqlStr + ") WHERE rnum >= " + start + " AND " + "rnum < " + end)
+		sqlStr = oracleSql.String()
 	}
-
 	return
 }
 
@@ -390,13 +387,19 @@ func (b SelectBuilder) Suffix(sql string, args ...interface{}) SelectBuilder {
 
 // For oracle only
 // Limit sets a LIMIT clause on the query.
-func (b SelectBuilder) LimitRowNum(limit uint64, page uint64) SelectBuilder {
-	builder.Set(b, "LimitRowNum", fmt.Sprintf("%d", limit))
+func (b SelectBuilder) LimitRowNum(limit uint64) SelectBuilder {
+	return builder.Set(b, "LimitRowNum", fmt.Sprintf("%d", limit)).(SelectBuilder)
+}
+
+func (b SelectBuilder) Page(page uint64) SelectBuilder {
 	return builder.Set(b, "Page", fmt.Sprintf("%d", page)).(SelectBuilder)
 }
 
 // Limit ALL allows to access all records with limit
 func (b SelectBuilder) RemoveLimitRowNum() SelectBuilder {
-	builder.Delete(b, "LimitRowNum")
+	return builder.Delete(b, "LimitRowNum").(SelectBuilder)
+}
+
+func (b SelectBuilder) RemovePage() SelectBuilder {
 	return builder.Delete(b, "Page").(SelectBuilder)
 }
