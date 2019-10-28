@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/lann/builder"
@@ -22,6 +23,8 @@ type selectData struct {
 	HavingParts       []Sqlizer
 	OrderByParts      []Sqlizer
 	Limit             string
+	LimitRowNum       string // for oracle only
+	Page              string // for oracle only
 	Offset            string
 	Suffixes          exprs
 }
@@ -153,6 +156,29 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 	}
 
 	sqlStr = sql.String()
+
+	if len(d.LimitRowNum) > 0 {
+		if len(d.Page) > 0 {
+			oracleSql := sql
+			limit, errLimit := strconv.Atoi(d.LimitRowNum)
+			page, errPage := strconv.Atoi(d.Page)
+			if errLimit != nil {
+				limit = 20
+			}
+			if errPage != nil {
+				page = 1
+			}
+			start := strconv.Itoa(limit*(page-1) + 1)
+			end := strconv.Itoa(limit*page + 1)
+			oracleSql.WriteString(" SELECT * FROM (" + sqlStr + ") WHERE rnum >= " + start + " AND " + "rnum < " + end)
+
+		}
+	}
+
+	if len(d.Page) > 0 {
+		sql.WriteString(" LIMIT ")
+		sql.WriteString(d.Page)
+	}
 	return
 }
 
@@ -364,4 +390,17 @@ func (b SelectBuilder) RemoveOffset() SelectBuilder {
 // Suffix adds an expression to the end of the query
 func (b SelectBuilder) Suffix(sql string, args ...interface{}) SelectBuilder {
 	return builder.Append(b, "Suffixes", Expr(sql, args...)).(SelectBuilder)
+}
+
+// For oracle only
+// Limit sets a LIMIT clause on the query.
+func (b SelectBuilder) LimitRowNum(limit uint64, page uint64) SelectBuilder {
+	builder.Set(b, "LimitRowNum", fmt.Sprintf("%d", limit))
+	return builder.Set(b, "Page", fmt.Sprintf("%d", page)).(SelectBuilder)
+}
+
+// Limit ALL allows to access all records with limit
+func (b SelectBuilder) RemoveLimitRowNum() SelectBuilder {
+	builder.Delete(b, "LimitRowNum")
+	return builder.Delete(b, "Page").(SelectBuilder)
 }

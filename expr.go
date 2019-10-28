@@ -98,7 +98,11 @@ func Alias(expr Sqlizer, alias string) aliasExpr {
 func (e aliasExpr) ToSql() (sql string, args []interface{}, err error) {
 	sql, args, err = e.expr.ToSql()
 	if err == nil {
-		sql = fmt.Sprintf("(%s) AS %s", sql, e.alias)
+		if len(e.alias) > 0 {
+			sql = fmt.Sprintf("(%s) AS %s", sql, e.alias)
+		} else {
+			sql = fmt.Sprintf("(%s)", sql)
+		}
 	}
 	return
 }
