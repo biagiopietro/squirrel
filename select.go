@@ -120,7 +120,7 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 		}
 	} else if len(d.WherePartsEscapeEmptyParams) > 0 {
 		sql.WriteString(" WHERE ")
-		args, err = appendToSqlForWhereClause(d.WherePartsEscapeEmptyParams, sql, " AND ", true, args)
+		args, err = appendToSqlForWhereClause(d.WherePartsEscapeEmptyParams, sql, " AND ", args)
 		if err != nil {
 			return
 		}
@@ -164,6 +164,13 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 
 	sqlStr = sql.String()
 
+	if strings.HasSuffix(sqlStr, " WHERE ") {
+		sqlStr = sqlStr[:len(sqlStr)-len(" WHERE ")]
+	}
+	if strings.HasSuffix(sqlStr, " WHERE )") {
+		sqlStr = sqlStr[:len(sqlStr)-len(" WHERE )")] + ")"
+	}
+
 	if len(d.LimitRowNum) > 0 || len(d.Page) > 0 {
 		oracleSql := &bytes.Buffer{}
 		limit, errLimit := strconv.Atoi(d.LimitRowNum)
@@ -179,10 +186,7 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 		oracleSql.WriteString("SELECT * FROM (" + sqlStr + ") WHERE rnum >= " + start + " AND " + "rnum < " + end)
 		sqlStr = oracleSql.String()
 	}
-	if strings.HasSuffix(sqlStr, " WHERE ") {
-		println("cane")
-		sqlStr = sqlStr[:len(sqlStr)-len(" WHERE ")]
-	}
+
 	return
 }
 
