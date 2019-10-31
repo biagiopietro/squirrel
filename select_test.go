@@ -88,6 +88,24 @@ func TestSelectPageLimitForOracle(t *testing.T) {
 	assert.Equal(t, expectedArgs, args)
 }
 
+func TestWhereEscapeEmptyParams(t *testing.T) {
+	//subQ := Select("c").From("d").Where(Eq{"i": 0})
+	subQ := Select("t1.A, t1.B, t2.C, rownum as rnum").
+		From("TABLE1 t1").
+		Join("TABLE2 t2 ON t1.A = t2.A").
+		WhereEscapeEmptyParams(Eq{"lower(t2.B)": ""})
+	sql, args, err := subQ.ToSql()
+	assert.NoError(t, err)
+
+	expectedSql := "SELECT t1.A, t1.B, t2.C, rownum as rnum " +
+		"FROM TABLE1 t1 JOIN TABLE2 t2 ON t1.A = t2.A"
+	assert.Equal(t, expectedSql, sql)
+
+	var expectedArgs []interface{}
+	println(sql)
+	assert.Equal(t, expectedArgs, args)
+}
+
 func TestSelectBuilderFromSelectNestedDollarPlaceholders(t *testing.T) {
 	subQ := Select("c").
 		From("t").

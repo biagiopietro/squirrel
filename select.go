@@ -179,6 +179,10 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 		oracleSql.WriteString("SELECT * FROM (" + sqlStr + ") WHERE rnum >= " + start + " AND " + "rnum < " + end)
 		sqlStr = oracleSql.String()
 	}
+	if strings.HasSuffix(sqlStr, " WHERE ") {
+		println("cane")
+		sqlStr = sqlStr[:len(sqlStr)-len(" WHERE ")]
+	}
 	return
 }
 
