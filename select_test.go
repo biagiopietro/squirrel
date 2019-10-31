@@ -1,9 +1,8 @@
 package squirrel
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestSelectBuilderToSql(t *testing.T) {
@@ -68,22 +67,24 @@ func TestSelectBuilderFromSelect(t *testing.T) {
 
 func TestSelectPageLimitForOracle(t *testing.T) {
 	//subQ := Select("c").From("d").Where(Eq{"i": 0})
-	subQ := Select("t1.IDSOGGETTO, t1.IDISCRIZIONE, t2.DENOMINAZIONE, rownum as rnum").
-		From("STP t1").
-		Join("GRUPPO t2 ON t1.IDSOGGETTO = t2.IDSOGGETTO").
-		Where(Like{"lower(t2.DENOMINAZIONE)": "%t%"}).
+	subQ := Select("t1.A, t1.B, t2.C, rownum as rnum").
+		From("TABLE1 t1").
+		Join("TABLE2 t2 ON t1.A = t2.A").
+		WhereEscapeEmptyParams(Like{"lower(t2.B)": "f1"}).
+		WhereEscapeEmptyParams(Eq{"t2.C": "f2"}).
+		WhereEscapeEmptyParams(GtOrEq{"t2.A": "15"}).
 		LimitRowNum(2).Page(1)
 	sql, args, err := subQ.ToSql()
 	assert.NoError(t, err)
 
 	expectedSql := "SELECT * " +
-		"FROM (SELECT t1.IDSOGGETTO, t1.IDISCRIZIONE, t2.DENOMINAZIONE, rownum as rnum " +
-		"FROM STP t1 JOIN GRUPPO t2 ON t1.IDSOGGETTO = t2.IDSOGGETTO " +
-		"WHERE lower(t2.DENOMINAZIONE) LIKE ?) " +
+		"FROM (SELECT t1.A, t1.B, t2.C, rownum as rnum " +
+		"FROM TABLE1 t1 JOIN TABLE2 t2 ON t1.A = t2.A " +
+		"WHERE lower(t2.B) LIKE ? AND t2.C = ? AND t2.A >= ?) " +
 		"WHERE rnum >= 1 AND rnum < 3"
 	assert.Equal(t, expectedSql, sql)
 
-	expectedArgs := []interface{}{"%t%"}
+	expectedArgs := []interface{}{"f1", "f2", "15"}
 	assert.Equal(t, expectedArgs, args)
 }
 

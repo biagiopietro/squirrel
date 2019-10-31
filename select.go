@@ -11,22 +11,23 @@ import (
 )
 
 type selectData struct {
-	PlaceholderFormat PlaceholderFormat
-	RunWith           BaseRunner
-	Prefixes          exprs
-	Options           []string
-	Columns           []Sqlizer
-	From              Sqlizer
-	Joins             []Sqlizer
-	WhereParts        []Sqlizer
-	GroupBys          []string
-	HavingParts       []Sqlizer
-	OrderByParts      []Sqlizer
-	Limit             string
-	LimitRowNum       string // for oracle only
-	Page              string // for oracle only
-	Offset            string
-	Suffixes          exprs
+	PlaceholderFormat           PlaceholderFormat
+	RunWith                     BaseRunner
+	Prefixes                    exprs
+	Options                     []string
+	Columns                     []Sqlizer
+	From                        Sqlizer
+	Joins                       []Sqlizer
+	WhereParts                  []Sqlizer
+	WherePartsEscapeEmptyParams []Sqlizer
+	GroupBys                    []string
+	HavingParts                 []Sqlizer
+	OrderByParts                []Sqlizer
+	Limit                       string
+	LimitRowNum                 string // for oracle only
+	Page                        string // for oracle only
+	Offset                      string
+	Suffixes                    exprs
 }
 
 func (d *selectData) Exec() (sql.Result, error) {
@@ -117,6 +118,12 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 		if err != nil {
 			return
 		}
+	} else if len(d.WherePartsEscapeEmptyParams) > 0 {
+		sql.WriteString(" WHERE ")
+		args, err = appendToSqlForWhereClause(d.WherePartsEscapeEmptyParams, sql, " AND ", true, args)
+		if err != nil {
+			return
+		}
 	}
 
 	if len(d.GroupBys) > 0 {
@@ -173,6 +180,10 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 		sqlStr = oracleSql.String()
 	}
 	return
+}
+
+func RemoveIndex(s []interface{}, index int) []interface{} {
+	return append(s[:index], s[index+1:]...)
 }
 
 // Builder
@@ -332,6 +343,13 @@ func (b SelectBuilder) Where(pred interface{}, args ...interface{}) SelectBuilde
 		return b
 	}
 	return builder.Append(b, "WhereParts", newWherePart(pred, args...)).(SelectBuilder)
+}
+
+func (b SelectBuilder) WhereEscapeEmptyParams(pred interface{}, args ...interface{}) SelectBuilder {
+	if pred == nil || pred == "" {
+		return b
+	}
+	return builder.Append(b, "WherePartsEscapeEmptyParams", newWherePart(pred, args...)).(SelectBuilder)
 }
 
 // GroupBy adds GROUP BY expressions to the query.

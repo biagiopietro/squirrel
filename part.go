@@ -50,6 +50,33 @@ func appendToSql(parts []Sqlizer, w io.Writer, sep string, args []interface{}) (
 			return nil, err
 		}
 		args = append(args, partArgs...)
+
+	}
+	return args, nil
+}
+
+func appendToSqlForWhereClause(parts []Sqlizer, w io.Writer, sep string, isWhere bool, args []interface{}) ([]interface{}, error) {
+	for i, p := range parts {
+		partSql, partArgs, err := p.ToSql()
+		if err != nil {
+			return nil, err
+		} else if len(partSql) == 0 {
+			continue
+		}
+		if len(fmt.Sprintf("%s", partArgs)) > 2 {
+			if i > 0 {
+				_, err := io.WriteString(w, sep)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			_, err = io.WriteString(w, partSql)
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, partArgs...)
+		}
 	}
 	return args, nil
 }
