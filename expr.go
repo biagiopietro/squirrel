@@ -199,8 +199,12 @@ func (neq NotEq) ToSql() (sql string, args []interface{}, err error) {
 // Ex:
 //     .Where(Like{"name": "%irrel"})
 type Like map[string]interface{}
+type LikeLower map[string]interface{}
+type LikeLowerPercentPrefix map[string]interface{}
+type LikeLowerPercentSuffix map[string]interface{}
+type LikeLowerPercentPrefixSuffix map[string]interface{}
 
-func (lk Like) toSql(opposite bool) (sql string, args []interface{}, err error) {
+func (lk Like) toSql(opposite bool, lower bool, percentPrefix bool, percentSuffix bool) (sql string, args []interface{}, err error) {
 	var (
 		exprs []string
 		opr   = "LIKE"
@@ -228,7 +232,19 @@ func (lk Like) toSql(opposite bool) (sql string, args []interface{}, err error) 
 				err = fmt.Errorf("cannot use array or slice with like operators")
 				return
 			} else {
-				expr = fmt.Sprintf("%s %s ?", key, opr)
+				placeholder := "?"
+				if percentSuffix {
+					placeholder = placeholder + "%"
+				}
+				if percentPrefix {
+					placeholder = "%" + placeholder
+				}
+				if lower {
+					key = fmt.Sprintf("lower(%s)", key)
+					placeholder = fmt.Sprintf("lower(%s)", placeholder)
+				}
+
+				expr = fmt.Sprintf("%s %s %s", key, opr, placeholder)
 				args = append(args, val)
 			}
 		}
@@ -239,16 +255,52 @@ func (lk Like) toSql(opposite bool) (sql string, args []interface{}, err error) 
 }
 
 func (lk Like) ToSql() (sql string, args []interface{}, err error) {
-	return lk.toSql(false)
+	return lk.toSql(false, false, false, false)
+}
+
+func (lk LikeLower) ToSql() (sql string, args []interface{}, err error) {
+	return Like(lk).toSql(false, true, false, false)
+}
+
+func (lk LikeLowerPercentPrefix) ToSql() (sql string, args []interface{}, err error) {
+	return Like(lk).toSql(false, true, true, false)
+}
+
+func (lk LikeLowerPercentSuffix) ToSql() (sql string, args []interface{}, err error) {
+	return Like(lk).toSql(false, true, false, true)
+}
+
+func (lk LikeLowerPercentPrefixSuffix) ToSql() (sql string, args []interface{}, err error) {
+	return Like(lk).toSql(false, true, true, true)
 }
 
 // NotLike is syntactic sugar for use with LIKE conditions.
 // Ex:
 //     .Where(NotLike{"name": "%irrel"})
 type NotLike Like
+type NotLikeLower LikeLower
+type NotLikeLowerPercentPrefix LikeLowerPercentPrefix
+type NotLikeLowerPercentSuffix LikeLowerPercentSuffix
+type NotLikeLowerPercentPrefixSuffix LikeLowerPercentPrefixSuffix
 
 func (nlk NotLike) ToSql() (sql string, args []interface{}, err error) {
-	return Like(nlk).toSql(true)
+	return Like(nlk).toSql(true, false, false, false)
+}
+
+func (nlk NotLikeLower) ToSql() (sql string, args []interface{}, err error) {
+	return Like(nlk).toSql(true, true, false, false)
+}
+
+func (nlk NotLikeLowerPercentPrefix) ToSql() (sql string, args []interface{}, err error) {
+	return Like(nlk).toSql(true, true, true, false)
+}
+
+func (nlk NotLikeLowerPercentSuffix) ToSql() (sql string, args []interface{}, err error) {
+	return Like(nlk).toSql(true, true, false, true)
+}
+
+func (nlk NotLikeLowerPercentPrefixSuffix) ToSql() (sql string, args []interface{}, err error) {
+	return Like(nlk).toSql(true, true, true, true)
 }
 
 // Lt is syntactic sugar for use with Where/Having/Set methods.

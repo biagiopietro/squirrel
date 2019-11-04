@@ -207,7 +207,6 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 		oracleSql.WriteString("SELECT * FROM (" + sqlStr + ") WHERE rnum >= " + start + " AND " + "rnum < " + end)
 		sqlStr = oracleSql.String()
 	} else if d.CountAll {
-		println("ciao")
 		oracleSql := &bytes.Buffer{}
 		oracleSql.WriteString("SELECT COUNT(*) FROM (" + sqlStr + ")")
 		sqlStr = oracleSql.String()
