@@ -26,6 +26,7 @@ type selectData struct {
 	Limit                       string
 	LimitRowNum                 string // for oracle only
 	Page                        string // for oracle only
+	CountAll                    bool   // for oracle only
 	Offset                      string
 	Suffixes                    exprs
 }
@@ -184,6 +185,11 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 		start := strconv.Itoa(limit*(page-1) + 1)
 		end := strconv.Itoa(limit*page + 1)
 		oracleSql.WriteString("SELECT * FROM (" + sqlStr + ") WHERE rnum >= " + start + " AND " + "rnum < " + end)
+		sqlStr = oracleSql.String()
+	} else if d.CountAll {
+		println("ciao")
+		oracleSql := &bytes.Buffer{}
+		oracleSql.WriteString("SELECT COUNT(*) FROM (" + sqlStr + ")")
 		sqlStr = oracleSql.String()
 	}
 
@@ -421,6 +427,10 @@ func (b SelectBuilder) Page(page uint64) SelectBuilder {
 	return builder.Set(b, "Page", fmt.Sprintf("%d", page)).(SelectBuilder)
 }
 
+func (b SelectBuilder) CountAll(flag bool) SelectBuilder {
+	return builder.Set(b, "CountAll", flag).(SelectBuilder)
+}
+
 // Limit ALL allows to access all records with limit
 func (b SelectBuilder) RemoveLimitRowNum() SelectBuilder {
 	return builder.Delete(b, "LimitRowNum").(SelectBuilder)
@@ -428,4 +438,8 @@ func (b SelectBuilder) RemoveLimitRowNum() SelectBuilder {
 
 func (b SelectBuilder) RemovePage() SelectBuilder {
 	return builder.Delete(b, "Page").(SelectBuilder)
+}
+
+func (b SelectBuilder) RemoveCountAll() SelectBuilder {
+	return builder.Delete(b, "CountAll").(SelectBuilder)
 }
