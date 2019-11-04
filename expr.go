@@ -234,10 +234,10 @@ func (lk Like) toSql(opposite bool, lower bool, percentPrefix bool, percentSuffi
 			} else {
 				placeholder := "?"
 				if percentSuffix {
-					placeholder = placeholder + "%"
+					placeholder = placeholder + " || '%'"
 				}
 				if percentPrefix {
-					placeholder = "%" + placeholder
+					placeholder = "'%' || " + placeholder
 				}
 				if lower {
 					key = fmt.Sprintf("lower(%s)", key)

@@ -366,7 +366,7 @@ func TestLikeLowerPercentPrefixToSql(t *testing.T) {
 	sql, args, err := b.ToSql()
 	assert.NoError(t, err)
 
-	expectedSql := "lower(name) LIKE lower(%?)"
+	expectedSql := "lower(name) LIKE lower('%' || ?)"
 	assert.Equal(t, expectedSql, sql)
 
 	expectedArgs := []interface{}{"mike"}
@@ -378,7 +378,7 @@ func TestLikeLowerPercentSuffixToSql(t *testing.T) {
 	sql, args, err := b.ToSql()
 	assert.NoError(t, err)
 
-	expectedSql := "lower(name) LIKE lower(?%)"
+	expectedSql := "lower(name) LIKE lower(? || '%')"
 	assert.Equal(t, expectedSql, sql)
 
 	expectedArgs := []interface{}{"mike"}
@@ -390,7 +390,7 @@ func TestLikeLowerPercentPrefixSuffixToSql(t *testing.T) {
 	sql, args, err := b.ToSql()
 	assert.NoError(t, err)
 
-	expectedSql := "lower(name) LIKE lower(%?%)"
+	expectedSql := "lower(name) LIKE lower('%' || ? || '%')"
 	assert.Equal(t, expectedSql, sql)
 
 	expectedArgs := []interface{}{"mike"}
@@ -426,7 +426,7 @@ func TestNotLikeLowerPercentPrefixToSql(t *testing.T) {
 	sql, args, err := b.ToSql()
 	assert.NoError(t, err)
 
-	expectedSql := "lower(name) NOT LIKE lower(%?)"
+	expectedSql := "lower(name) NOT LIKE lower('%' || ?)"
 	assert.Equal(t, expectedSql, sql)
 
 	expectedArgs := []interface{}{"mike"}
@@ -438,7 +438,7 @@ func TestNotLikeLowerPercentSuffixToSql(t *testing.T) {
 	sql, args, err := b.ToSql()
 	assert.NoError(t, err)
 
-	expectedSql := "lower(name) NOT LIKE lower(?%)"
+	expectedSql := "lower(name) NOT LIKE lower(? || '%')"
 	assert.Equal(t, expectedSql, sql)
 
 	expectedArgs := []interface{}{"mike"}
@@ -450,7 +450,7 @@ func TestNotLikeLowerPercentPrefixSuffixToSql(t *testing.T) {
 	sql, args, err := b.ToSql()
 	assert.NoError(t, err)
 
-	expectedSql := "lower(name) NOT LIKE lower(%?%)"
+	expectedSql := "lower(name) NOT LIKE lower('%' || ? || '%')"
 	assert.Equal(t, expectedSql, sql)
 
 	expectedArgs := []interface{}{"mike"}
