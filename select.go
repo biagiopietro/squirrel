@@ -66,8 +66,28 @@ func (d *selectData) ToSql() (sqlStr string, args []interface{}, err error) {
 	return
 }
 
+func (d *selectData) HasWhereParts() (hasWhereParts bool) {
+	return d.hasWhereParts()
+}
+
 func (d *selectData) toSqlRaw() (sqlStr string, args []interface{}, err error) {
 	return d.toSql()
+}
+
+func (d *selectData) hasWhereParts() (hasWhereParts bool) {
+	if len(d.WherePartsEscapeEmptyParams) > 0 {
+		var args []interface{}
+		sql := &bytes.Buffer{}
+		_, err := appendToSqlForWhereClause(&d.WherePartsEscapeEmptyParams, sql, " AND ", args)
+		if err != nil {
+			return false
+		}
+	}
+	if len(d.WhereParts) > 0 || len(d.WherePartsEscapeEmptyParams) > 0 {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
@@ -121,7 +141,7 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 		}
 	} else if len(d.WherePartsEscapeEmptyParams) > 0 {
 		sql.WriteString(" WHERE ")
-		args, err = appendToSqlForWhereClause(d.WherePartsEscapeEmptyParams, sql, " AND ", args)
+		args, err = appendToSqlForWhereClause(&d.WherePartsEscapeEmptyParams, sql, " AND ", args)
 		if err != nil {
 			return
 		}
@@ -196,7 +216,7 @@ func (d *selectData) toSql() (sqlStr string, args []interface{}, err error) {
 	return
 }
 
-func RemoveIndex(s []interface{}, index int) []interface{} {
+func RemoveIndex(s []Sqlizer, index int) []Sqlizer {
 	return append(s[:index], s[index+1:]...)
 }
 
@@ -253,6 +273,11 @@ func (b SelectBuilder) Scan(dest ...interface{}) error {
 func (b SelectBuilder) ToSql() (string, []interface{}, error) {
 	data := builder.GetStruct(b).(selectData)
 	return data.ToSql()
+}
+
+func (b SelectBuilder) HasWhereParts() (hasWhereParts bool) {
+	data := builder.GetStruct(b).(selectData)
+	return data.HasWhereParts()
 }
 
 func (b SelectBuilder) MustSql() (string, []interface{}) {

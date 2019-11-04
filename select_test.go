@@ -143,6 +143,23 @@ func TestCountAll(t *testing.T) {
 	assert.Equal(t, expectedArgs, args)
 }
 
+func TestHasWhereParts(t *testing.T) {
+	//subQ := Select("c").From("d").Where(Eq{"i": 0})
+	subQ := Select("t1.A, t1.B, t2.C, rownum as rnum").
+		From("TABLE1 t1").
+		Join("TABLE2 t2 ON t1.A = t2.A").
+		WhereEscapeEmptyParams(Like{"lower(t2.B)": ""}).
+		Where(Like{"lower(t2.B)": "a"})
+
+	//_,_, err := subQ.ToSql()
+	hasWhereParts := subQ.HasWhereParts()
+	//assert.NoError(t, err)
+
+	expectedHasWhereParts := true
+	assert.Equal(t, expectedHasWhereParts, hasWhereParts)
+
+}
+
 func TestSelectBuilderFromSelectNestedDollarPlaceholders(t *testing.T) {
 	subQ := Select("c").
 		From("t").
